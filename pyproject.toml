@@ -1,0 +1,25 @@
+[project]
+name = "mlx-nanochat"
+version = "0.1.0"
+description = "Train your own ChatGPT on Apple Silicon — MLX port of Karpathy's nanochat"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+    "mlx>=0.25.0",
+    "tiktoken>=0.9.0",
+    "numpy>=1.26.0",
+    "requests>=2.31.0",
+    "pyarrow>=15.0.0",
+]
+
+[project.optional-dependencies]
+train-tokenizer = [
+    "tokenizers>=0.21.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["nanochat_mlx"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

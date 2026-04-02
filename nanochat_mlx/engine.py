@@ -59,6 +59,10 @@ class Engine:
         logits = logits[:, -1, :]  # (1, vocab_size)
         if num_samples > 1:
             logits = mx.broadcast_to(logits, (num_samples, logits.shape[-1]))
+            # Expand KV cache to match num_samples batch dimension
+            cache = [(mx.repeat(k, num_samples, axis=0), mx.repeat(v, num_samples, axis=0))
+                     for k, v in cache]
+            self._materialize(*[c for pair in cache for c in pair])
 
         completed = [False] * num_samples
 

@@ -113,7 +113,7 @@ def run_training(args):
 
     # Calculate training horizon from scaling laws
     d12_dim = ((12 * args.aspect_ratio + args.head_dim - 1) // args.head_dim) * args.head_dim
-    d12_scaling_params = 12 * (4 * d12_dim * d12_dim * 4 + d12_dim * d12_dim * 4) + d12_dim * vocab_size
+    d12_scaling_params = 12 * 12 * d12_dim * d12_dim + d12_dim * vocab_size
     D_REF = args.target_param_data_ratio * d12_scaling_params
     B_REF = 2**19
 
@@ -239,6 +239,8 @@ def run_training(args):
                     accumulated_grads = mlx.utils.tree_map(
                         lambda a, b: a + b, accumulated_grads, grads
                     )
+                # Materialize per micro-step to prevent unbounded graph growth
+                mx.eval(total_loss, *[v for _, v in mlx.utils.tree_flatten(accumulated_grads)])
                 x, y, dataloader_state = next(train_loader)
 
             accumulated_grads = mlx.utils.tree_map(

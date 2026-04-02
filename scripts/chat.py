@@ -107,12 +107,18 @@ while True:
     ):
         token = token_column[0]
         response_tokens.append(token)
-        print(tokenizer.decode([token]), end="", flush=True)
+        # Don't print special end tokens
+        if token != assistant_end and token != bos:
+            print(tokenizer.decode([token]), end="", flush=True)
     print()
 
     if not response_tokens or response_tokens[-1] != assistant_end:
         response_tokens.append(assistant_end)
     conversation_tokens.extend(response_tokens)
+
+    # Truncate conversation to fit within max_seq_len (keep BOS + recent turns)
+    if len(conversation_tokens) > args.max_seq_len:
+        conversation_tokens = [bos] + conversation_tokens[-(args.max_seq_len - 1):]
 
     if args.prompt:
         break

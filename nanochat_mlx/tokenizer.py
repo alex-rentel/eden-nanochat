@@ -153,6 +153,9 @@ class HuggingFaceTokenizer:
                 add_tokens(assistant_start, 0)
                 if isinstance(content, str):
                     add_tokens(self.encode(content), 1)
+                elif isinstance(content, list):
+                    for part in content:
+                        add_tokens(self.encode(part["text"]), 1)
                 add_tokens(assistant_end, 1)
 
         ids = ids[:max_tokens]

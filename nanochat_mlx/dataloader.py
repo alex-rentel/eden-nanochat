@@ -74,7 +74,8 @@ def data_loader_bos_bestfit(
         doc_batch, (pq_idx, rg_idx, epoch) = next(batches)
         token_lists = tokenizer.encode(doc_batch, prepend=bos_token)
         for tokens in token_lists:
-            doc_buffer.append(tokens)
+            if len(tokens) > 1:  # Skip empty docs (BOS-only)
+                doc_buffer.append(tokens)
 
     # Pre-allocate numpy buffer for row construction
     row_buffer = np.zeros((B, row_capacity), dtype=np.int32)

@@ -22,6 +22,7 @@ import math
 
 import mlx.core as mx
 import mlx.nn as nn
+import mlx.utils
 
 
 @dataclass
@@ -59,8 +60,8 @@ def precompute_rotary_embeddings(seq_len, head_dim, base=100000):
     inv_freq = 1.0 / (base ** (channel_range / head_dim))
     t = mx.arange(seq_len).astype(mx.float32)
     freqs = mx.outer(t, inv_freq)
-    cos = mx.cos(freqs).astype(mx.float16)
-    sin = mx.sin(freqs).astype(mx.float16)
+    cos = mx.cos(freqs).astype(mx.bfloat16)
+    sin = mx.sin(freqs).astype(mx.bfloat16)
     # Shape: (1, seq_len, 1, head_dim/2) for broadcasting
     cos = cos[None, :, None, :]
     sin = sin[None, :, None, :]
@@ -263,10 +264,10 @@ class GPT(nn.Module):
         # Create causal mask
         if T > 1:
             mask = nn.MultiHeadAttention.create_additive_causal_mask(T)
-            mask = mask.astype(mx.float16)
+            mask = mask.astype(mx.bfloat16)
             if T0 > 0:
                 # During cache usage with T>1 (prefill), we need full mask
-                prefix = mx.zeros((T, T0), dtype=mx.float16)
+                prefix = mx.zeros((T, T0), dtype=mx.bfloat16)
                 mask = mx.concatenate([prefix, mask], axis=1)
             mask = mask[None, None, :, :]  # (1, 1, T, T+T0)
         else:
@@ -326,7 +327,9 @@ class GPT(nn.Module):
             # Mask out -1 targets (padding)
             valid = targets_flat != -1
             if mx.any(valid):
-                loss = nn.losses.cross_entropy(logits_flat, targets_flat, reduction='none')
+                # Replace -1 with 0 before cross_entropy to avoid invalid indexing
+                safe_targets = mx.where(valid, targets_flat, mx.zeros_like(targets_flat))
+                loss = nn.losses.cross_entropy(logits_flat, safe_targets, reduction='none')
                 loss = mx.where(valid, loss, 0.0)
                 loss = loss.sum() / valid.sum()
             else:
@@ -344,9 +347,8 @@ class GPT(nn.Module):
         """Estimate FLOPs per token (forward + backward = 6x matmul params)."""
         nparams = 0
         for block in self.blocks:
-            for _, p in block.parameters().items():
-                if isinstance(p, mx.array):
-                    nparams += p.size
+            for _, p in mlx.utils.tree_flatten(block.parameters()):
+                nparams += p.size
         nparams += self.lm_head.weight.size
 
         h = self.config.n_head

@@ -131,7 +131,7 @@ def sft_data_loader(tokenizer, conversations, B, T):
                 ids_chunk = ids[:doc_len]
                 mask_chunk = mask[:doc_len]
 
-                for j in range(doc_len - 1):
+                for j in range(doc_len):
                     if pos + j < T:
                         batch_inputs[row, pos + j] = ids_chunk[j]
                         if j + 1 < doc_len and mask_chunk[j + 1] == 1:
@@ -184,6 +184,7 @@ def run_sft(args):
     # Load SFT data and split into train/val
     import random
     conversations = load_smoltalk(max_examples=args.max_examples)
+    random.seed(42)
     random.shuffle(conversations)
     split_idx = int(len(conversations) * 0.9)
     train_convos = conversations[:split_idx]

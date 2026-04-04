@@ -16,6 +16,11 @@ parser.add_argument("--num-iterations", type=int, default=500, help="number of S
 parser.add_argument("--learning-rate", type=float, default=1e-4, help="learning rate")
 parser.add_argument("--max-examples", type=int, default=50000, help="max training examples")
 parser.add_argument("--save-every", type=int, default=100, help="save every N steps")
+parser.add_argument("--eval-interval", type=int, default=100, help="evaluate val loss every N steps")
+parser.add_argument("--eval-samples", type=int, default=5, help="number of val batches per eval")
+parser.add_argument("--data", type=str, default=None, help="path to JSONL training data (ChatML or SmolTalk format)")
+parser.add_argument("--format", type=str, default="auto", choices=["auto", "smoltalk", "chatml"],
+                    help="training data format (auto-detect by default)")
 
 args = parser.parse_args()
 run_sft(args)

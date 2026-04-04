@@ -173,6 +173,60 @@ class HuggingFaceTokenizer:
         return ids
 
 
+def render_chatml_conversation(tokenizer, conversation, max_tokens=2048):
+    """Tokenize a ChatML conversation with tool-calling support.
+    Returns (ids, mask) where mask=1 for tokens the model should predict (assistant turns).
+    System and tool messages are masked out (mask=0). User messages are masked out.
+    """
+    ids, mask = [], []
+    def add_tokens(token_ids, mask_val):
+        if isinstance(token_ids, int):
+            token_ids = [token_ids]
+        ids.extend(token_ids)
+        mask.extend([mask_val] * len(token_ids))
+
+    messages = conversation["messages"]
+
+    bos = tokenizer.get_bos_token_id()
+    user_start = tokenizer.encode_special("<|user_start|>")
+    user_end = tokenizer.encode_special("<|user_end|>")
+    assistant_start = tokenizer.encode_special("<|assistant_start|>")
+    assistant_end = tokenizer.encode_special("<|assistant_end|>")
+    output_start = tokenizer.encode_special("<|output_start|>")
+    output_end = tokenizer.encode_special("<|output_end|>")
+
+    add_tokens(bos, 0)
+    for message in messages:
+        role = message["role"]
+        content = message.get("content", "")
+        if not isinstance(content, str):
+            content = str(content)
+
+        if role == "system":
+            # System message: encode as user context, masked out
+            add_tokens(user_start, 0)
+            add_tokens(tokenizer.encode(content), 0)
+            add_tokens(user_end, 0)
+        elif role == "user":
+            add_tokens(user_start, 0)
+            add_tokens(tokenizer.encode(content), 0)
+            add_tokens(user_end, 0)
+        elif role == "assistant":
+            # Assistant turns: loss computed on these
+            add_tokens(assistant_start, 0)
+            add_tokens(tokenizer.encode(content), 1)
+            add_tokens(assistant_end, 1)
+        elif role == "tool":
+            # Tool output: masked out (model doesn't predict these)
+            add_tokens(output_start, 0)
+            add_tokens(tokenizer.encode(content), 0)
+            add_tokens(output_end, 0)
+
+    ids = ids[:max_tokens]
+    mask = mask[:max_tokens]
+    return ids, mask
+
+
 class TiktokenTokenizer:
     """Wrapper around tiktoken for pretrained tokenizers (e.g. GPT-2, GPT-4).
     Uses pickle for tiktoken Encoding serialization (upstream nanochat design)."""

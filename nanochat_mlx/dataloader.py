@@ -91,6 +91,7 @@ def data_loader_bos_bestfit(
                 remaining = row_capacity - pos
 
                 # Best-fit: find largest doc that fits
+                # TODO: optimize to O(log n) with sorted container if buffer_size > 10000
                 best_idx = -1
                 best_len = 0
                 for i, doc in enumerate(doc_buffer):

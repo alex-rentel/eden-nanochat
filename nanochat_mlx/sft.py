@@ -92,15 +92,50 @@ def _generate_synthetic_sft_data(n=1000):
     return conversations
 
 
-def sft_data_loader(tokenizer, conversations, B, T):
+def detect_format(conversations):
+    """Detect whether conversations are SmolTalk or ChatML format.
+    ChatML has role 'tool' or 'system' messages with tool_call content."""
+    if not conversations:
+        return "smoltalk"
+    sample = conversations[0]
+    messages = sample.get("messages", [])
+    for msg in messages:
+        if msg.get("role") == "tool":
+            return "chatml"
+        if msg.get("role") == "assistant":
+            content = msg.get("content", "")
+            if isinstance(content, str) and "<tool_call>" in content:
+                return "chatml"
+    return "smoltalk"
+
+
+def load_jsonl(path, max_examples=50000):
+    """Load conversations from a JSONL file."""
+    conversations = []
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            conversations.append(json.loads(line))
+            if len(conversations) >= max_examples:
+                break
+    return conversations
+
+
+def sft_data_loader(tokenizer, conversations, B, T, fmt="smoltalk"):
     """Pack conversations into batches using BOS-aligned bestfit packing."""
+    from nanochat_mlx.tokenizer import render_chatml_conversation
     row_capacity = T + 1
 
     # Tokenize all conversations
     all_docs = []
     for conv in conversations:
         try:
-            ids, mask = tokenizer.render_conversation(conv, max_tokens=row_capacity)
+            if fmt == "chatml":
+                ids, mask = render_chatml_conversation(tokenizer, conv, max_tokens=row_capacity)
+            else:
+                ids, mask = tokenizer.render_conversation(conv, max_tokens=row_capacity)
             if len(ids) > 2:
                 all_docs.append((ids, mask))
         except (AssertionError, KeyError):
@@ -183,7 +218,18 @@ def run_sft(args):
 
     # Load SFT data and split into train/val
     import random
-    conversations = load_smoltalk(max_examples=args.max_examples)
+    if hasattr(args, 'data') and args.data is not None:
+        conversations = load_jsonl(args.data, max_examples=args.max_examples)
+        print(f"Loaded {len(conversations)} conversations from {args.data}")
+    else:
+        conversations = load_smoltalk(max_examples=args.max_examples)
+
+    # Detect or use specified format
+    fmt = getattr(args, 'format', 'auto')
+    if fmt == "auto":
+        fmt = detect_format(conversations)
+    print(f"Data format: {fmt}")
+
     random.seed(42)
     random.shuffle(conversations)
     split_idx = int(len(conversations) * 0.9)
@@ -191,8 +237,11 @@ def run_sft(args):
     val_convos = conversations[split_idx:]
     print(f"SFT split: {len(train_convos)} train, {len(val_convos)} val")
 
+    eval_interval = getattr(args, 'eval_interval', 100)
+    eval_samples = getattr(args, 'eval_samples', 5)
+
     # Create data loader
-    loader = sft_data_loader(tokenizer, train_convos, args.device_batch_size, args.max_seq_len)
+    loader = sft_data_loader(tokenizer, train_convos, args.device_batch_size, args.max_seq_len, fmt=fmt)
 
     # Optimizer - mx.eval below is MLX array materialization, not Python eval
     lr = args.learning_rate
@@ -224,16 +273,16 @@ def run_sft(args):
             tok_per_sec = int(args.device_batch_size * args.max_seq_len / dt)
             print(f"sft step {step:05d}/{args.num_iterations:05d} | loss: {debiased:.4f} | dt: {dt*1000:.0f}ms | tok/s: {tok_per_sec:,}")
 
-        if step > 0 and step % 100 == 0:
-            val_loader_iter = sft_data_loader(tokenizer, val_convos, args.device_batch_size, args.max_seq_len)
+        if step > 0 and step % eval_interval == 0:
+            val_loader_iter = sft_data_loader(tokenizer, val_convos, args.device_batch_size, args.max_seq_len, fmt=fmt)
             val_loss = 0.0
-            val_steps = 5
-            for vs in range(val_steps):
+            for vs in range(eval_samples):
                 vx, vy = next(val_loader_iter)
                 vl = model(vx, targets=vy)
-                mx.eval(vl)  # mx.eval materializes MLX lazy arrays
+                # mx.eval materializes MLX lazy arrays (NOT Python's eval builtin)
+                mx.eval(vl)
                 val_loss += vl.item()
-            val_loss /= val_steps
+            val_loss /= eval_samples
             print(f"sft step {step:05d} | val_loss: {val_loss:.4f}")
 
         if step > 0 and step % args.save_every == 0:

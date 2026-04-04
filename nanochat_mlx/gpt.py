@@ -358,8 +358,24 @@ class GPT(nn.Module):
         return 6 * nparams + attn_flops
 
 
+# Reference presets for comparison targets
+MODEL_PRESETS = {
+    "gemma4-e4b": GPTConfig(
+        sequence_len=8192,
+        vocab_size=262144,
+        n_layer=34,
+        n_head=16,
+        n_kv_head=8,
+        n_embd=2560,
+    ),
+}
+
+
 def build_model(depth, aspect_ratio=64, head_dim=128, max_seq_len=2048, vocab_size=32768):
-    """Build a GPT model from depth (the one complexity dial)."""
+    """Build a GPT model from depth (the one complexity dial).
+
+    Note: mx.eval() below materializes MLX lazy arrays, not Python's eval().
+    """
     base_dim = depth * aspect_ratio
     model_dim = ((base_dim + head_dim - 1) // head_dim) * head_dim
     num_heads = model_dim // head_dim
@@ -375,5 +391,5 @@ def build_model(depth, aspect_ratio=64, head_dim=128, max_seq_len=2048, vocab_si
 
     model = GPT(config)
     model.init_weights()
-    mx.eval(model.parameters())  # mx.eval materializes MLX lazy arrays
+    mx.eval(model.parameters())
     return model

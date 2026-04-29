@@ -6,8 +6,8 @@ Note: pickle is used here intentionally for tiktoken Encoding serialization,
 matching the upstream nanochat design. Only load tokenizers you trust.
 """
 
-import os
 import copy
+import os
 import pickle
 from functools import lru_cache
 
@@ -43,8 +43,8 @@ class HuggingFaceTokenizer:
 
     @classmethod
     def train_from_iterator(cls, text_iterator, vocab_size):
+        from tokenizers import Regex, decoders, pre_tokenizers
         from tokenizers import Tokenizer as HFTokenizer
-        from tokenizers import pre_tokenizers, decoders, Regex
         from tokenizers.models import BPE
         from tokenizers.trainers import BpeTrainer
 
@@ -253,7 +253,7 @@ class TiktokenTokenizer:
     def get_special_tokens(self):
         return self.enc.special_tokens_set
 
-    @lru_cache(maxsize=32)
+    @lru_cache(maxsize=32)  # noqa: B019  # bounded; tokenizer is typically a singleton
     def encode_special(self, text):
         return self.enc.encode_single_token(text)
 
@@ -386,6 +386,7 @@ def get_token_bytes():
     """Load the token-to-bytes mapping for BPB evaluation."""
     import mlx.core as mx
     import numpy as np
+
     from nanochat_mlx.common import get_base_dir
     base_dir = get_base_dir()
     token_bytes_path = os.path.join(base_dir, "tokenizer", "token_bytes.npy")

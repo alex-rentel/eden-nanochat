@@ -4,6 +4,7 @@ Pretrain base model. Run as:
 """
 
 import argparse
+
 from nanochat_mlx.train import run_training
 
 parser = argparse.ArgumentParser(description="Pretrain base model")

@@ -3,14 +3,15 @@ Train a BPE tokenizer on the pretraining data.
     python -m scripts.tok_train
 """
 
+import argparse
 import os
 import time
-import argparse
+
 import numpy as np
 
-from nanochat_mlx.tokenizer import HuggingFaceTokenizer, SPECIAL_TOKENS
 from nanochat_mlx.common import get_base_dir
 from nanochat_mlx.dataset import parquets_iter_batched
+from nanochat_mlx.tokenizer import HuggingFaceTokenizer
 
 parser = argparse.ArgumentParser(description='Train a BPE tokenizer')
 parser.add_argument('--max-chars', type=int, default=2_000_000_000, help='Max characters to train on')

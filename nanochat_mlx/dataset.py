@@ -3,18 +3,20 @@ Dataset download and iteration utilities.
 Downloads ClimbMix-400B parquet shards from HuggingFace.
 """
 
-import os
 import argparse
+import os
 import time
-import requests
-import pyarrow.parquet as pq
 from multiprocessing import Pool
+
+import pyarrow.parquet as pq
+import requests
 
 from nanochat_mlx.common import get_base_dir
 
 BASE_URL = "https://huggingface.co/datasets/karpathy/climbmix-400b-shuffle/resolve/main"
 MAX_SHARD = 6542
-index_to_filename = lambda index: f"shard_{index:05d}.parquet"
+def index_to_filename(index: int) -> str:
+    return f"shard_{index:05d}.parquet"
 base_dir = get_base_dir()
 DATA_DIR = os.path.join(base_dir, "base_data_climbmix")
 
@@ -77,7 +79,7 @@ def download_single_file(index):
             os.rename(temp_path, filepath)
             print(f"Successfully downloaded {filename}")
             return True
-        except (requests.RequestException, IOError) as e:
+        except (OSError, requests.RequestException) as e:
             print(f"Attempt {attempt}/{max_attempts} failed for {filename}: {e}")
             for path in [filepath + ".tmp", filepath]:
                 if os.path.exists(path):

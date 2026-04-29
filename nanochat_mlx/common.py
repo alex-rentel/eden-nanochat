@@ -3,9 +3,6 @@ Common utilities for mlx-nanochat.
 """
 
 import os
-import math
-
-import mlx.core as mx
 
 BANNER = r"""
               _         _         _

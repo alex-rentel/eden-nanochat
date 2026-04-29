@@ -1,6 +1,7 @@
 """Tests for inference engine: nucleus sampling."""
 
 import mlx.core as mx
+
 from nanochat_mlx.engine import sample_next_token
 
 

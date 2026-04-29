@@ -5,23 +5,22 @@ IMPORTANT: All mx.eval() calls in this file are MLX array materialization,
 NOT Python's eval() builtin. mx.eval() forces lazy computation graphs to execute.
 """
 
-import os
 import json
+import os
 import time
-import math
 from dataclasses import asdict
 
-import numpy as np
 import mlx.core as mx
 import mlx.nn as nn
 import mlx.optimizers as optim
 import mlx.utils
+import numpy as np
 import requests
 
-from nanochat_mlx.gpt import GPT, GPTConfig, build_model
 from nanochat_mlx.common import get_base_dir, print_banner
+from nanochat_mlx.gpt import build_model
 from nanochat_mlx.tokenizer import get_tokenizer
-from nanochat_mlx.train import save_checkpoint, load_checkpoint
+from nanochat_mlx.train import load_checkpoint, save_checkpoint
 
 
 def load_smoltalk(max_examples=50000):
@@ -32,7 +31,7 @@ def load_smoltalk(max_examples=50000):
     cache_path = os.path.join(cache_dir, "smoltalk.json")
 
     if os.path.exists(cache_path):
-        with open(cache_path, "r") as f:
+        with open(cache_path) as f:
             data = json.load(f)
         return data[:max_examples]
 
@@ -40,8 +39,9 @@ def load_smoltalk(max_examples=50000):
     print("Downloading SmolTalk dataset...")
     url = "https://huggingface.co/datasets/HuggingFaceTB/smoltalk/resolve/main/data/all/train-00000-of-00001.parquet"
     try:
-        import pyarrow.parquet as pq
         import tempfile
+
+        import pyarrow.parquet as pq
         response = requests.get(url, stream=True, timeout=60)
         response.raise_for_status()
         with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as tmp:
@@ -112,7 +112,7 @@ def detect_format(conversations):
 def load_jsonl(path, max_examples=50000):
     """Load conversations from a JSONL file."""
     conversations = []
-    with open(path, "r") as f:
+    with open(path) as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -245,10 +245,11 @@ def run_sft(args):
 
     # Optimizer - mx.eval below is MLX array materialization, not Python eval
     lr = args.learning_rate
-    optimizer = optim.AdamW(learning_rate=lr, betas=(0.9, 0.95), weight_decay=0.01)
+    optimizer = optim.AdamW(learning_rate=lr, betas=[0.9, 0.95], weight_decay=0.01)
 
     # Training loop
-    loss_fn = lambda model, x, y: model(x, targets=y)
+    def loss_fn(model, x, y):
+        return model(x, targets=y)
     loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
 
     sft_checkpoint_dir = os.path.join(base_dir, "sft_checkpoints", f"d{args.depth}")
@@ -276,7 +277,7 @@ def run_sft(args):
         if step > 0 and step % eval_interval == 0:
             val_loader_iter = sft_data_loader(tokenizer, val_convos, args.device_batch_size, args.max_seq_len, fmt=fmt)
             val_loss = 0.0
-            for vs in range(eval_samples):
+            for _vs in range(eval_samples):
                 vx, vy = next(val_loader_iter)
                 vl = model(vx, targets=vy)
                 # mx.eval materializes MLX lazy arrays (NOT Python's eval builtin)

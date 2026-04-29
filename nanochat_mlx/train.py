@@ -4,22 +4,21 @@ Uses MLX's value_and_grad for automatic differentiation and AdamW optimizer.
 Note: mx.eval() is MLX's array materialization function, not Python's eval() builtin.
 """
 
-import os
 import json
-import time
 import math
+import os
+import time
 from dataclasses import asdict
 
-import numpy as np
 import mlx.core as mx
 import mlx.nn as nn
 import mlx.optimizers as optim
 import mlx.utils
 
-from nanochat_mlx.gpt import GPT, GPTConfig, build_model
 from nanochat_mlx.common import get_base_dir, print_banner
-from nanochat_mlx.tokenizer import get_tokenizer, get_token_bytes
 from nanochat_mlx.dataloader import data_loader_bos_bestfit
+from nanochat_mlx.gpt import build_model
+from nanochat_mlx.tokenizer import get_token_bytes, get_tokenizer
 
 
 def loss_fn(model, x, y):
@@ -81,7 +80,7 @@ def load_checkpoint(checkpoint_dir, step, model):
     weights = mx.load(weights_path)
     model.load_weights(list(weights.items()))
 
-    with open(meta_path, "r") as f:
+    with open(meta_path) as f:
         meta = json.load(f)
     return meta
 
@@ -144,7 +143,7 @@ def run_training(args):
     # Create optimizer
     optimizer = optim.AdamW(
         learning_rate=matrix_lr,
-        betas=(0.9, 0.95),
+        betas=[0.9, 0.95],
         weight_decay=args.weight_decay,
     )
 
@@ -183,7 +182,7 @@ def run_training(args):
     total_training_time = 0.0
     step = 0
 
-    print(f"\nStarting training...")
+    print("\nStarting training...")
     x, y, dataloader_state = next(train_loader)
 
     while step <= num_iterations:
@@ -229,7 +228,7 @@ def run_training(args):
             total_loss = mx.array(0.0)
             accumulated_grads = None
 
-            for micro_step in range(grad_accum_steps):
+            for _micro_step in range(grad_accum_steps):
                 loss, grads = loss_and_grad_fn(model, x, y)
                 total_loss = total_loss + loss
 

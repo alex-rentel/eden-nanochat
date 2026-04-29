@@ -4,8 +4,8 @@ Every row starts with BOS. Documents packed using best-fit to minimize cropping.
 100% utilization (no padding), ~35% tokens cropped at T=2048.
 """
 
-import numpy as np
 import mlx.core as mx
+import numpy as np
 import pyarrow.parquet as pq
 
 from nanochat_mlx.dataset import list_parquet_files
@@ -121,5 +121,5 @@ def data_loader_bos_bestfit(
 
 def data_loader_simple(tokenizer, B, T, split, **kwargs):
     """Helper that omits state_dict from yields."""
-    for inputs, targets, state_dict in data_loader_bos_bestfit(tokenizer, B, T, split, **kwargs):
+    for inputs, targets, _state_dict in data_loader_bos_bestfit(tokenizer, B, T, split, **kwargs):
         yield inputs, targets

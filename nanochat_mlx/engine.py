@@ -4,7 +4,6 @@ Note: mx.eval() calls are MLX's array materialization function, not Python eval(
 """
 
 import mlx.core as mx
-import mlx.nn as nn
 
 
 def sample_next_token(logits, temperature=1.0, top_k=None, top_p=None):
@@ -100,7 +99,7 @@ class Engine:
         completed = [False] * num_samples
 
         for token_column, token_masks in self.generate(tokens, num_samples, **kwargs):
-            for i, (token, mask) in enumerate(zip(token_column, token_masks)):
+            for i, (token, _mask) in enumerate(zip(token_column, token_masks, strict=False)):
                 if not completed[i]:
                     if token == assistant_end or token == bos:
                         completed[i] = True

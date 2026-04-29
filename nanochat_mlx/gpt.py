@@ -17,8 +17,8 @@ Note: mx.eval() calls in this file are used to materialize MLX lazy arrays,
 not Python's eval() builtin.
 """
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 import mlx.core as mx
 import mlx.nn as nn

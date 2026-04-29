@@ -4,13 +4,13 @@ Interactive chat with a trained model. Run as:
 """
 
 import argparse
-import mlx.core as mx
-from nanochat_mlx.gpt import build_model
+import os
+
+from nanochat_mlx.common import get_base_dir
 from nanochat_mlx.engine import Engine
+from nanochat_mlx.gpt import build_model
 from nanochat_mlx.tokenizer import get_tokenizer
 from nanochat_mlx.train import load_checkpoint
-from nanochat_mlx.common import get_base_dir
-import os
 
 parser = argparse.ArgumentParser(description='Chat with the model')
 parser.add_argument('--depth', type=int, default=20, help='Model depth')
@@ -101,7 +101,7 @@ while True:
     # Generate response
     response_tokens = []
     print("\nAssistant: ", end="", flush=True)
-    for token_column, token_masks in engine.generate(
+    for token_column, _token_masks in engine.generate(
         conversation_tokens, num_samples=1,
         max_tokens=256, temperature=args.temperature, top_k=args.top_k, top_p=args.top_p
     ):

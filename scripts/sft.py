@@ -4,6 +4,7 @@ Supervised Fine-Tuning. Run as:
 """
 
 import argparse
+
 from nanochat_mlx.sft import run_sft
 
 parser = argparse.ArgumentParser(description="SFT fine-tuning")

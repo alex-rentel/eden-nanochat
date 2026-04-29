@@ -1,11 +1,10 @@
 """Tests for GPT model: parameter counting, learnable scalars, presets."""
 
-import math
 import mlx.core as mx
 import mlx.nn as nn
 import mlx.utils
 
-from nanochat_mlx.gpt import GPT, GPTConfig, build_model, MODEL_PRESETS, has_ve
+from nanochat_mlx.gpt import GPT, MODEL_PRESETS, GPTConfig, build_model, has_ve
 
 
 def _materialize(*arrays):
@@ -34,7 +33,8 @@ def test_learnable_scalars_update_after_training_step():
     initial_backout = model.backout_lambda.tolist()
 
     # Run one training step
-    loss_fn = lambda model, x, y: model(x, targets=y)
+    def loss_fn(model, x, y):
+        return model(x, targets=y)
     loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
 
     B, T = 2, 64

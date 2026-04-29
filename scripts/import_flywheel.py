@@ -1,9 +1,9 @@
 """
-Import training data from training-flywheel's SQLite database.
+Import training data from eden-flywheel's SQLite database.
 
 Usage:
     python scripts/import_flywheel.py \
-        --flywheel-db ~/.config/training-flywheel/flywheel.db \
+        --flywheel-db ~/.config/eden-flywheel/flywheel.db \
         --output data/flywheel_export.jsonl \
         --min-quality 0.6 \
         --format chatml
@@ -70,7 +70,7 @@ def export_flywheel(db_path, output_path, min_quality=0.6, fmt="chatml"):
         query += f" WHERE {quality_col} >= ?"
         cursor = conn.execute(query, (min_quality,))
     else:
-        print(f"Warning: no quality column found, exporting all rows")
+        print("Warning: no quality column found, exporting all rows")
         cursor = conn.execute(query)
 
     rows = cursor.fetchall()
@@ -118,9 +118,9 @@ def export_flywheel(db_path, output_path, min_quality=0.6, fmt="chatml"):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Import training data from training-flywheel")
+    parser = argparse.ArgumentParser(description="Import training data from eden-flywheel")
     parser.add_argument("--flywheel-db", type=str,
-                        default=os.path.expanduser("~/.config/training-flywheel/flywheel.db"),
+                        default=os.path.expanduser("~/.config/eden-flywheel/flywheel.db"),
                         help="Path to flywheel SQLite database")
     parser.add_argument("--output", type=str, default="data/flywheel_export.jsonl",
                         help="Output JSONL path")

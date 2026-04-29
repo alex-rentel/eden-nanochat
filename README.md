@@ -79,9 +79,9 @@ python -m scripts.chat --depth=12
 ### Tool-calling SFT (ChatML format)
 
 ```bash
-# Import data from training-flywheel
+# Import data from eden-flywheel
 python scripts/import_flywheel.py \
-    --flywheel-db ~/.config/training-flywheel/flywheel.db \
+    --flywheel-db ~/.config/eden-flywheel/flywheel.db \
     --output data/tool_calling.jsonl \
     --min-quality 0.6
 

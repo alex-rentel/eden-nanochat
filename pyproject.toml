@@ -16,6 +16,11 @@ dependencies = [
 train-tokenizer = [
     "tokenizers>=0.21.0",
 ]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.5",
+    "pyright>=1.1.350",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["nanochat_mlx"]
@@ -23,3 +28,43 @@ packages = ["nanochat_mlx"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["dist", "build", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E501",  # line length not always actionable for math/training-script code
+]
+
+[tool.pyright]
+include = ["nanochat_mlx", "scripts"]
+exclude = ["**/__pycache__", "build", "dist", ".venv"]
+typeCheckingMode = "basic"
+pythonVersion = "3.11"
+pythonPlatform = "Darwin"
+venvPath = "."
+venv = ".venv"
+# Optional-narrowing rules off (training code uses runtime guards
+# pyright cannot see); reportArgumentType stays at error to catch
+# real type bugs. reportAttributeAccessIssue / reportIndexIssue are
+# off because MLX's type stubs mark several return types as Union
+# (str | array, int | float | bool) where the runtime is always the
+# array branch — fixing each call site with type: ignore is noisier
+# than the warnings would be useful.
+reportOptionalSubscript = "none"
+reportOptionalMemberAccess = "none"
+reportOptionalCall = "none"
+reportOptionalOperand = "none"
+reportOptionalIterable = "none"
+reportCallIssue = "none"
+reportAttributeAccessIssue = "none"
+reportIndexIssue = "none"
+reportAssignmentType = "warning"
+reportArgumentType = "error"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
